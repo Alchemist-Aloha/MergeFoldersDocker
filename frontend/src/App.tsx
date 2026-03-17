@@ -22,10 +22,19 @@ function App() {
   const [logs, setLogs] = useState<LogMessage[]>([]);
   const [merging, setMerging] = useState(false);
 
-  const autoDestination = useMemo(() => {
-    if (selectedPaths.length === 0) return null;
-    return `${selectedPaths[0]}_merged`;
+  // We only merge folders. Files selected in preview are for deletion.
+  // This is a simple heuristic: if it has an extension, it's likely a file.
+  // A better way would be to check the 'isDir' property from the API data,
+  // but for now, we'll just filter selectedPaths based on what we're doing.
+  const selectedFolders = useMemo(() => {
+    // In our app, folders in the FileExplorer don't typically have extensions like .webp, .jpg etc.
+    return selectedPaths.filter(p => !p.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg|tiff)$/i));
   }, [selectedPaths]);
+
+  const autoDestination = useMemo(() => {
+    if (selectedFolders.length === 0) return null;
+    return `${selectedFolders[0]}_merged`;
+  }, [selectedFolders]);
 
   useEffect(() => {
     const ws = new WebSocket(WS_BASE);
@@ -58,17 +67,17 @@ function App() {
   };
 
   const startMerge = () => {
-    if (selectedPaths.length === 0 || !autoDestination) return;
+    if (selectedFolders.length === 0 || !autoDestination) return;
     setMerging(true);
     setProgress(0);
     setLogs([]);
-    addLog(`Initiating batch merge of ${selectedPaths.length} folders into ${autoDestination.split('/').pop()}...`);
+    addLog(`Initiating batch merge of ${selectedFolders.length} folders into ${autoDestination.split('/').pop()}...`);
 
     fetch(`${API_BASE}/api/merge`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
-        sources: selectedPaths, 
+        sources: selectedFolders, 
         destination: autoDestination, 
         policy, 
         dryRun 
@@ -158,13 +167,13 @@ function App() {
 
                 <div className="space-y-3">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-gray-400 uppercase">Selected Folders</label>
-                    <div className="p-2 bg-blue-50 border border-blue-100 rounded text-xs text-blue-900 min-h-[40px] max-h-[80px] overflow-y-auto">
+                    <label className="text-[10px] font-bold text-gray-400 uppercase">Selected Items</label>
+                    <div className="p-2 bg-blue-50 border border-blue-100 rounded text-xs text-blue-900 min-h-[40px] max-h-[120px] overflow-y-auto">
                       {selectedPaths.length > 0 ? (
                         <ul className="list-disc list-inside">
                           {selectedPaths.map(p => <li key={p} className="truncate">{p.split('/').pop()}</li>)}
                         </ul>
-                      ) : <span className="italic opacity-50">No folders selected</span>}
+                      ) : <span className="italic opacity-50">No items selected</span>}
                     </div>
                   </div>
 
@@ -198,17 +207,17 @@ function App() {
                   <div className="grid grid-cols-2 gap-2 pt-2">
                     <button 
                       onClick={startMerge}
-                      disabled={selectedPaths.length === 0 || merging}
+                      disabled={selectedFolders.length === 0 || merging}
                       className="py-2.5 bg-blue-600 text-white text-xs font-bold rounded shadow-sm hover:bg-blue-700 disabled:opacity-30 flex items-center justify-center gap-1.5"
                     >
-                      <Merge size={14} /> Merge
+                      <Merge size={14} /> Merge Folders
                     </button>
                     <button 
                       onClick={startDelete}
                       disabled={selectedPaths.length === 0 || merging}
                       className="py-2.5 bg-red-50 text-red-600 text-xs font-bold rounded border border-red-100 hover:bg-red-100 disabled:opacity-30 flex items-center justify-center gap-1.5"
                     >
-                      <Trash2 size={14} /> Delete
+                      <Trash2 size={14} /> Delete Selected
                     </button>
                   </div>
                 </div>
