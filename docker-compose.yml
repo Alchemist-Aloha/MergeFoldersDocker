@@ -1,0 +1,15 @@
+services:
+  merge-folders:
+    build: .
+    container_name: merge-folders-app
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/app/data
+      - merge-cache:/app/cache
+    environment:
+      - GIN_MODE=release
+    restart: unless-stopped
+
+volumes:
+  merge-cache:
