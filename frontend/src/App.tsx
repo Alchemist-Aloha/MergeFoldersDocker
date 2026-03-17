@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import FileExplorer from './components/FileExplorer';
 import PreviewPanel from './components/PreviewPanel';
-import { useStore, type ViewType } from './store';
-import { Settings2, Trash2, Layout, Merge, Folder, Image as ImageIcon, Activity } from 'lucide-react';
+import { useStore } from './store';
+import { Settings2, Trash2, Layout, Merge } from 'lucide-react';
 
 const API_BASE = window.location.origin;
 const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -15,7 +15,7 @@ interface LogMessage {
 }
 
 function App() {
-  const { selectedPaths, clearSelection, triggerRefresh, activeView, setActiveView } = useStore();
+  const { selectedPaths, clearSelection, triggerRefresh } = useStore();
   const [policy, setPolicy] = useState('rename');
   const [dryRun, setDryRun] = useState(true);
   const [progress, setProgress] = useState(0);
@@ -112,18 +112,6 @@ function App() {
     });
   };
 
-  const NavButton = ({ view, icon: Icon, label }: { view: ViewType, icon: any, label: string }) => (
-    <button 
-      onClick={() => setActiveView(view)}
-      className={`flex flex-col items-center gap-1 flex-1 py-2 transition-colors ${
-        activeView === view ? 'text-blue-600' : 'text-gray-400 hover:text-gray-600'
-      }`}
-    >
-      <Icon size={20} />
-      <span className="text-[10px] font-bold uppercase tracking-tighter">{label}</span>
-    </button>
-  );
-
   return (
     <div className="h-screen bg-gray-50 flex flex-col font-sans text-gray-900 overflow-hidden">
       <header className="bg-white border-b border-gray-200 px-4 md:px-6 py-2 md:py-3 flex items-center justify-between shadow-sm shrink-0 z-10">
@@ -149,102 +137,93 @@ function App() {
         </div>
       </header>
 
-      <main className="flex-1 flex overflow-hidden p-2 md:p-4 gap-4 relative">
-        {/* Mobile View Logic */}
-        <div className={`flex-1 md:flex gap-4 overflow-hidden ${activeView === 'explorer' ? 'flex' : 'hidden md:flex'}`}>
-          <div className="w-full md:w-1/3 flex flex-col gap-4 md:min-w-[350px]">
-            <FileExplorer />
-          </div>
+      <main className="flex-1 flex flex-col md:flex-row overflow-hidden p-2 md:p-4 gap-2 md:gap-4">
+        {/* Top Panel (Mobile) / Left Panel (Desktop): Explorer */}
+        <div className="h-[35vh] md:h-full w-full md:w-1/3 flex flex-col gap-4 md:min-w-[350px]">
+          <FileExplorer />
         </div>
 
-        <div className={`flex-1 md:flex gap-4 overflow-hidden ${activeView === 'preview' ? 'flex' : 'hidden md:flex'}`}>
-          <div className="flex-1 overflow-hidden">
+        {/* Bottom Split (Mobile) / Right Side (Desktop) */}
+        <div className="flex-1 flex flex-col md:flex-row gap-2 md:gap-4 overflow-hidden">
+          {/* Middle Panel (Mobile) / Middle (Desktop): Preview */}
+          <div className="flex-1 overflow-hidden min-h-[30vh]">
             <PreviewPanel />
           </div>
-        </div>
 
-        <div className={`flex-1 md:flex gap-4 overflow-hidden ${activeView === 'dashboard' ? 'flex' : 'hidden md:flex'}`}>
-          <div className="w-full md:w-80 flex flex-col gap-4 shrink-0 overflow-y-auto">
+          {/* Bottom Panel (Mobile) / Right (Desktop): Dashboard & Logs */}
+          <div className="h-[25vh] md:h-full w-full md:w-80 flex flex-col gap-2 md:gap-4 shrink-0 overflow-hidden">
             {/* Dashboard */}
-            <section className="bg-white p-4 md:p-5 rounded-lg border border-gray-200 shadow-sm flex flex-col gap-4">
-              <h2 className="text-sm font-bold flex items-center gap-2 text-gray-600 uppercase tracking-wider">
-                <Settings2 size={16} className="text-blue-600" />
+            <section className="bg-white p-3 md:p-5 rounded-lg border border-gray-200 shadow-sm flex flex-col gap-2 md:gap-4 overflow-y-auto">
+              <h2 className="text-[10px] md:text-sm font-bold flex items-center gap-2 text-gray-600 uppercase tracking-wider">
+                <Settings2 size={14} className="text-blue-600 md:w-4 md:h-4" />
                 Dashboard
               </h2>
 
-              <div className="space-y-3">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase">Selected Items</label>
-                  <div className="p-2 bg-blue-50 border border-blue-100 rounded text-[11px] text-blue-900 min-h-[40px] max-h-[120px] overflow-y-auto">
-                    {selectedPaths.length > 0 ? (
-                      <ul className="list-disc list-inside">
-                        {selectedPaths.map(p => <li key={p} className="truncate">{p.split('/').pop()}</li>)}
-                      </ul>
-                    ) : <span className="italic opacity-50 text-[10px]">No items selected</span>}
+              <div className="space-y-2 md:space-y-3">
+                <div className="flex gap-2 md:block">
+                  <div className="flex-1 space-y-1">
+                    <label className="text-[8px] md:text-[10px] font-bold text-gray-400 uppercase">Target</label>
+                    <div className="p-1.5 md:p-2 bg-green-50 border border-green-100 rounded text-[9px] md:text-[11px] text-green-900 truncate font-medium">
+                      {autoDestination ? autoDestination.split('/').pop() : 'N/A'}
+                    </div>
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <label className="text-[8px] md:text-[10px] font-bold text-gray-400 uppercase">Policy</label>
+                    <select 
+                      value={policy}
+                      onChange={(e) => setPolicy(e.target.value)}
+                      className="w-full p-1 md:p-2 text-[9px] md:text-xs border border-gray-200 rounded bg-white outline-none"
+                    >
+                      <option value="rename">Rename</option>
+                      <option value="overwrite">Overwrite</option>
+                      <option value="skip">Skip</option>
+                    </select>
                   </div>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase">Target</label>
-                  <div className="p-2 bg-green-50 border border-green-100 rounded text-[11px] text-green-900 truncate font-medium">
-                    {autoDestination ? autoDestination.split('/').pop() : 'N/A'}
+                <div className="flex items-center justify-between gap-2">
+                  <label className="flex items-center gap-1.5 p-1.5 bg-gray-50 border border-gray-100 rounded cursor-pointer shrink-0">
+                    <input type="checkbox" checked={dryRun} onChange={(e) => setDryRun(e.target.checked)} className="w-2.5 h-2.5 md:w-3 md:h-3" />
+                    <span className="text-[9px] md:text-[11px] font-medium text-gray-700">Dry Run</span>
+                  </label>
+                  
+                  <div className="flex-1 grid grid-cols-2 gap-1.5">
+                    <button 
+                      onClick={startMerge}
+                      disabled={selectedFolders.length === 0 || merging}
+                      className="py-1.5 bg-blue-600 text-white text-[9px] md:text-[11px] font-bold rounded shadow-sm disabled:opacity-30 flex items-center justify-center gap-1"
+                    >
+                      <Merge size={10} className="md:w-3 md:h-3" /> Merge
+                    </button>
+                    <button 
+                      onClick={startDelete}
+                      disabled={selectedPaths.length === 0 || merging}
+                      className="py-1.5 bg-red-50 text-red-600 text-[9px] md:text-[11px] font-bold rounded border border-red-100 disabled:opacity-30 flex items-center justify-center gap-1"
+                    >
+                      <Trash2 size={10} className="md:w-3 md:h-3" /> Delete
+                    </button>
                   </div>
-                </div>
-
-                <div className="space-y-2 pt-1">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase">Policy</label>
-                  <select 
-                    value={policy}
-                    onChange={(e) => setPolicy(e.target.value)}
-                    className="w-full p-2 text-xs border border-gray-200 rounded bg-white outline-none"
-                  >
-                    <option value="rename">Rename</option>
-                    <option value="overwrite">Overwrite</option>
-                    <option value="skip">Skip</option>
-                  </select>
-                </div>
-
-                <label className="flex items-center gap-2 p-2 bg-gray-50 border border-gray-100 rounded cursor-pointer">
-                  <input type="checkbox" checked={dryRun} onChange={(e) => setDryRun(e.target.checked)} className="w-3 h-3" />
-                  <span className="text-[11px] font-medium text-gray-700">Dry Run</span>
-                </label>
-
-                <div className="grid grid-cols-2 gap-2 pt-2">
-                  <button 
-                    onClick={startMerge}
-                    disabled={selectedFolders.length === 0 || merging}
-                    className="py-2 bg-blue-600 text-white text-[11px] font-bold rounded shadow-sm disabled:opacity-30 flex items-center justify-center gap-1"
-                  >
-                    <Merge size={12} /> Merge
-                  </button>
-                  <button 
-                    onClick={startDelete}
-                    disabled={selectedPaths.length === 0 || merging}
-                    className="py-2 bg-red-50 text-red-600 text-[11px] font-bold rounded border border-red-100 disabled:opacity-30 flex items-center justify-center gap-1"
-                  >
-                    <Trash2 size={12} /> Delete
-                  </button>
                 </div>
               </div>
             </section>
 
             {/* Logs */}
-            <section className="flex-1 bg-white border border-gray-200 rounded-lg shadow-sm flex flex-col overflow-hidden min-h-[200px] mb-12 md:mb-0">
-              <h2 className="px-4 py-2 border-b border-gray-100 bg-gray-50 text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+            <section className="flex-1 bg-white border border-gray-200 rounded-lg shadow-sm flex flex-col overflow-hidden">
+              <h2 className="px-3 py-1.5 md:px-4 md:py-2 border-b border-gray-100 bg-gray-50 text-[8px] md:text-[10px] font-bold text-gray-500 uppercase tracking-wider">
                 Logs
               </h2>
-              <div className="flex-1 overflow-y-auto p-3 font-mono text-[9px] md:text-[10px] flex flex-col gap-1.5 bg-gray-900 text-gray-300">
+              <div className="flex-1 overflow-y-auto p-2 md:p-3 font-mono text-[8px] md:text-[10px] flex flex-col gap-1 bg-gray-900 text-gray-300">
                 {logs.length === 0 ? (
-                  <div className="text-gray-600 italic text-center py-4">No activity yet.</div>
+                  <div className="text-gray-600 italic text-center py-2 md:py-4">No activity yet.</div>
                 ) : (
                   logs.map((log, i) => (
-                    <div key={i} className="flex gap-2 leading-tight">
+                    <div key={i} className="flex gap-1.5 leading-tight">
                       <span className="text-gray-500 shrink-0">{log.time.split(' ')[0]}</span>
                       <span className={`${
                         log.type === 'error' ? 'text-red-400' : 
                         log.type === 'success' ? 'text-green-400 font-bold' : 
                         'text-blue-300'
-                      }`}>
+                      } break-all`}>
                         {log.message}
                       </span>
                     </div>
@@ -255,13 +234,6 @@ function App() {
           </div>
         </div>
       </main>
-
-      {/* Mobile Bottom Navigation */}
-      <footer className="md:hidden bg-white border-t border-gray-200 flex items-center justify-around px-2 py-1 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] shrink-0 z-20">
-        <NavButton view="explorer" icon={Folder} label="Files" />
-        <NavButton view="preview" icon={ImageIcon} label="Preview" />
-        <NavButton view="dashboard" icon={Activity} label="Status" />
-      </footer>
     </div>
   );
 }

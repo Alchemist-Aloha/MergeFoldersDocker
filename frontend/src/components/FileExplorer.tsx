@@ -15,7 +15,7 @@ export default function FileExplorer() {
   const { 
     currentPath, setCurrentPath, 
     selectedPaths, toggleSelection, clearSelection,
-    setPreviewPath, previewPath, refreshKey, setActiveView
+    setPreviewPath, previewPath, refreshKey
   } = useStore();
   const [files, setFiles] = useState<FileEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -44,10 +44,6 @@ export default function FileExplorer() {
   const handleRowClick = (file: FileEntry) => {
     if (file.isDir) {
       setPreviewPath(file.path);
-      // On mobile, switch to preview view automatically when a folder is clicked
-      if (window.innerWidth < 768) {
-        setActiveView('preview');
-      }
     }
   };
 
@@ -59,38 +55,38 @@ export default function FileExplorer() {
 
   return (
     <div className="flex flex-col h-full bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-      <div className="p-3 md:p-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+      <div className="p-2 md:p-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2 overflow-hidden">
           <button 
             onClick={goUp} 
             disabled={currentPath === '/app/data'}
-            className="p-1.5 hover:bg-gray-200 rounded disabled:opacity-30 disabled:cursor-not-allowed"
+            className="p-1 hover:bg-gray-200 rounded disabled:opacity-30 disabled:cursor-not-allowed"
           >
-            <ChevronLeft size={18} />
+            <ChevronLeft size={18} className="md:w-5 md:h-5" />
           </button>
-          <span className="text-xs md:text-sm font-medium text-gray-700 truncate">{currentPath}</span>
+          <span className="text-[10px] md:text-sm font-medium text-gray-700 truncate">{currentPath}</span>
         </div>
       </div>
 
       {selectedPaths.length > 0 && (
-        <div className="bg-blue-50 px-3 md:px-4 py-1.5 md:py-2 border-b border-blue-100 flex items-center justify-between">
-          <span className="text-[11px] md:text-sm font-bold text-blue-700">{selectedPaths.length} selected</span>
+        <div className="bg-blue-50 px-2 md:px-4 py-1 border-b border-blue-100 flex items-center justify-between shrink-0">
+          <span className="text-[9px] md:text-sm font-bold text-blue-700">{selectedPaths.length} selected</span>
           <button 
             onClick={clearSelection}
-            className="text-[10px] md:text-xs text-blue-600 hover:underline font-bold uppercase"
+            className="text-[8px] md:text-xs text-blue-600 hover:underline font-bold uppercase"
           >
             Clear
           </button>
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto p-1.5 md:p-2">
+      <div className="flex-1 overflow-y-auto p-1 md:p-2">
         {loading ? (
-          <div className="flex justify-center p-8 text-gray-400 text-sm">Loading...</div>
+          <div className="flex justify-center p-4 md:p-8 text-gray-400 text-xs md:text-sm">Loading...</div>
         ) : files.length === 0 ? (
-          <div className="flex justify-center p-8 text-gray-400 italic text-sm">Empty directory</div>
+          <div className="flex justify-center p-4 md:p-8 text-gray-400 italic text-xs md:text-sm">Empty</div>
         ) : (
-          <div className="grid grid-cols-1 gap-0.5 md:gap-1">
+          <div className="grid grid-cols-1 gap-0.5">
             {files.map(file => {
               const isSelected = selectedPaths.includes(file.path);
               const isPreviewed = previewPath === file.path;
@@ -98,29 +94,29 @@ export default function FileExplorer() {
               return (
                 <div 
                   key={file.path}
-                  className={`flex items-center gap-2 md:gap-3 p-2 md:p-2.5 rounded-md cursor-pointer group transition-colors ${
-                    isPreviewed ? 'bg-blue-100' : 'hover:bg-gray-50'
+                  className={`flex items-center gap-2 md:gap-3 p-1.5 md:p-2.5 rounded cursor-pointer group transition-colors ${
+                    isPreviewed ? 'bg-blue-50 border border-blue-100' : 'hover:bg-gray-50 border border-transparent'
                   }`}
                   onClick={() => handleRowClick(file)}
                   onDoubleClick={() => handleDoubleClick(file)}
                 >
                   <div 
-                    className="p-1.5 hover:bg-gray-200 rounded-md shrink-0"
+                    className="p-1 hover:bg-gray-200 rounded shrink-0"
                     onClick={(e) => {
                       e.stopPropagation();
                       toggleSelection(file.path);
                     }}
                   >
-                    {isSelected ? <CheckSquare size={18} className="text-blue-600" /> : <Square size={18} className="text-gray-300" />}
+                    {isSelected ? <CheckSquare size={16} className="text-blue-600 md:w-[18px] md:h-[18px]" /> : <Square size={16} className="text-gray-300 md:w-[18px] md:h-[18px]" />}
                   </div>
                   
                   <div className="text-gray-400 group-hover:text-blue-500 transition-colors shrink-0">
-                    {file.isDir ? <Folder size={20} fill="currentColor" className="text-yellow-400 border-yellow-400" /> : 
-                     file.name.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? <ImageIcon size={20} /> : <FileIcon size={20} />}
+                    {file.isDir ? <Folder size={18} fill="currentColor" className="text-yellow-400 border-yellow-400 md:w-5 md:h-5" /> : 
+                     file.name.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? <ImageIcon size={18} className="md:w-5 md:h-5" /> : <FileIcon size={18} className="md:w-5 md:h-5" />}
                   </div>
                   
                   <div className="flex-1 overflow-hidden">
-                    <div className={`truncate text-xs md:text-sm ${file.isDir ? 'font-bold text-gray-800' : 'text-gray-600'}`}>
+                    <div className={`truncate text-[10px] md:text-sm ${file.isDir ? 'font-bold text-gray-800' : 'text-gray-600'}`}>
                       {file.name}
                     </div>
                   </div>
