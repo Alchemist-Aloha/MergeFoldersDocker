@@ -42,6 +42,7 @@ func ThumbHandler(chroot, cacheDir string) gin.HandlerFunc {
 
 		if _, err := os.Stat(thumbPath); os.IsNotExist(err) {
 			if err := fs.GenerateThumbnail(cleanPath, thumbPath, 300); err != nil {
+				fmt.Printf("Thumbnail error for %s: %v\n", cleanPath, err)
 				c.AbortWithStatus(http.StatusInternalServerError)
 				return
 			}

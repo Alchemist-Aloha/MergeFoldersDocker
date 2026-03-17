@@ -23,13 +23,16 @@ export default function PreviewPanel() {
     }
 
     setLoading(true);
+    console.log("Fetching images for path:", previewPath);
     fetch(`${API_BASE}/api/fs/list?path=${encodeURIComponent(previewPath)}`)
       .then(res => res.json())
       .then(data => {
+        console.log("Received data for preview:", data);
         if (Array.isArray(data)) {
           // More robust image extension check
           const imageExtensions = /\.(jpg|jpeg|png|gif|webp|bmp|svg|tiff)$/i;
           const filtered = data.filter(f => !f.isDir && f.name.match(imageExtensions));
+          console.log("Filtered images:", filtered);
           setImages(filtered);
         } else {
           setImages([]);
