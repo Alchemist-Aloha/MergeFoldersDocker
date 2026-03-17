@@ -3,13 +3,11 @@ services:
     build: .
     container_name: merge-folders-app
     ports:
-      - "8080:8080"
+      - "28888:8080"
     volumes:
-      - ./data:/app/data
-      - merge-cache:/app/cache
+      - ${DATA_PATH}:/app/data
+      - ${CACHE_PATH}:/app/cache
     environment:
       - GIN_MODE=release
     restart: unless-stopped
 
-volumes:
-  merge-cache:
