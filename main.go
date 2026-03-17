@@ -5,6 +5,7 @@ import (
 	"os"
 	"github.com/gin-gonic/gin"
 	"mergefoldersdocker/pkg/api"
+	"mergefoldersdocker/pkg/ws"
 	"github.com/gin-contrib/cors"
 )
 
@@ -17,8 +18,12 @@ func main() {
 	// Ensure cache dir exists
 	os.MkdirAll(cacheDir, 0755)
 
+	hub := ws.NewHub()
+	go hub.Run()
+
 	r.GET("/api/fs/list", api.ListHandler(chroot))
 	r.GET("/api/fs/thumb", api.ThumbHandler(chroot, cacheDir))
+	r.GET("/ws", ws.ServeWs(hub))
 
 	log.Println("Server starting on :8080")
 	r.Run(":8080")
