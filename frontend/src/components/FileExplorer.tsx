@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../store';
-import { Folder, File as FileIcon, Image as ImageIcon, ChevronLeft } from 'lucide-react';
+import { Folder, File as FileIcon, Image as ImageIcon, ChevronLeft, CheckSquare, Square } from 'lucide-react';
 
 interface FileEntry {
   name: string;
@@ -12,7 +12,11 @@ interface FileEntry {
 const API_BASE = window.location.origin;
 
 export default function FileExplorer() {
-  const { currentPath, setCurrentPath, setSourcePath, setDestPath } = useStore();
+  const { 
+    currentPath, setCurrentPath, 
+    selectedPaths, toggleSelection, clearSelection,
+    setPreviewPath, previewPath
+  } = useStore();
   const [files, setFiles] = useState<FileEntry[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -37,6 +41,18 @@ export default function FileExplorer() {
     }
   };
 
+  const handleRowClick = (file: FileEntry) => {
+    if (file.isDir) {
+      setPreviewPath(file.path);
+    }
+  };
+
+  const handleDoubleClick = (file: FileEntry) => {
+    if (file.isDir) {
+      setCurrentPath(file.path);
+    }
+  };
+
   return (
     <div className="flex flex-col h-full bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
       <div className="p-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
@@ -50,21 +66,19 @@ export default function FileExplorer() {
           </button>
           <span className="font-medium text-gray-700 truncate">{currentPath}</span>
         </div>
-        <div className="flex gap-2 shrink-0">
+      </div>
+
+      {selectedPaths.length > 0 && (
+        <div className="bg-blue-50 px-4 py-2 border-b border-blue-100 flex items-center justify-between">
+          <span className="text-sm font-bold text-blue-700">{selectedPaths.length} selected</span>
           <button 
-            onClick={() => setSourcePath(currentPath)}
-            className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+            onClick={clearSelection}
+            className="text-xs text-blue-600 hover:underline"
           >
-            Src
-          </button>
-          <button 
-            onClick={() => setDestPath(currentPath)}
-            className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
-          >
-            Dst
+            Clear
           </button>
         </div>
-      </div>
+      )}
 
       <div className="flex-1 overflow-y-auto p-2">
         {loading ? (
@@ -73,28 +87,42 @@ export default function FileExplorer() {
           <div className="flex justify-center p-8 text-gray-400 italic">Empty directory</div>
         ) : (
           <div className="grid grid-cols-1 gap-1">
-            {files.map(file => (
-              <div 
-                key={file.path}
-                className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded cursor-pointer group"
-                onClick={() => file.isDir && setCurrentPath(file.path)}
-              >
-                <div className="text-gray-400 group-hover:text-blue-500 transition-colors">
-                  {file.isDir ? <Folder size={20} fill="currentColor" className="text-yellow-400 border-yellow-400" /> : 
-                   file.name.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? <ImageIcon size={20} /> : <FileIcon size={20} />}
-                </div>
-                <div className="flex-1 overflow-hidden">
-                  <div className={`truncate ${file.isDir ? 'font-medium text-gray-800' : 'text-gray-600'}`}>
-                    {file.name}
+            {files.map(file => {
+              const isSelected = selectedPaths.includes(file.path);
+              const isPreviewed = previewPath === file.path;
+              
+              return (
+                <div 
+                  key={file.path}
+                  className={`flex items-center gap-3 p-2 rounded cursor-pointer group transition-colors ${
+                    isPreviewed ? 'bg-blue-100' : 'hover:bg-gray-50'
+                  }`}
+                  onClick={() => handleRowClick(file)}
+                  onDoubleClick={() => handleDoubleClick(file)}
+                >
+                  <div 
+                    className="p-1 hover:bg-gray-200 rounded"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleSelection(file.path);
+                    }}
+                  >
+                    {isSelected ? <CheckSquare size={18} className="text-blue-600" /> : <Square size={18} className="text-gray-300" />}
                   </div>
-                  {!file.isDir && (
-                    <div className="text-xs text-gray-400">
-                      {(file.size / 1024).toFixed(1)} KB
+                  
+                  <div className="text-gray-400 group-hover:text-blue-500 transition-colors shrink-0">
+                    {file.isDir ? <Folder size={20} fill="currentColor" className="text-yellow-400 border-yellow-400" /> : 
+                     file.name.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? <ImageIcon size={20} /> : <FileIcon size={20} />}
+                  </div>
+                  
+                  <div className="flex-1 overflow-hidden">
+                    <div className={`truncate ${file.isDir ? 'font-medium text-gray-800' : 'text-gray-600'}`}>
+                      {file.name}
                     </div>
-                  )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

@@ -15,6 +15,16 @@ func RunBatchMerge(sources []string, dst, policy string, dryRun bool, hub *ws.Hu
 		Data: map[string]string{"message": "Initiating batch merge operation..."},
 	}
 
+	if !dryRun {
+		if err := os.MkdirAll(dst, 0755); err != nil {
+			hub.Broadcast <- ws.Message{
+				Type: "error",
+				Data: map[string]string{"message": fmt.Sprintf("Failed to create destination directory %s: %v", dst, err)},
+			}
+			return
+		}
+	}
+
 	type fileToProcess struct {
 		srcPath  string
 		filename string

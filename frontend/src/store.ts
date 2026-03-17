@@ -2,18 +2,31 @@ import { create } from 'zustand'
 
 interface AppState {
   currentPath: string;
-  sourcePath: string | null;
-  destPath: string | null;
+  selectedPaths: string[];
+  previewPath: string | null;
+  
   setCurrentPath: (p: string) => void;
-  setSourcePath: (p: string | null) => void;
-  setDestPath: (p: string | null) => void;
+  setPreviewPath: (p: string | null) => void;
+  
+  toggleSelection: (p: string) => void;
+  clearSelection: () => void;
 }
 
 export const useStore = create<AppState>((set) => ({
   currentPath: '/app/data',
-  sourcePath: null,
-  destPath: null,
+  selectedPaths: [],
+  previewPath: null,
+  
   setCurrentPath: (p) => set({ currentPath: p }),
-  setSourcePath: (p) => set({ sourcePath: p }),
-  setDestPath: (p) => set({ destPath: p }),
+  setPreviewPath: (p) => set({ previewPath: p }),
+  
+  toggleSelection: (path) => set((state) => {
+    const isSelected = state.selectedPaths.includes(path);
+    if (isSelected) {
+      return { selectedPaths: state.selectedPaths.filter((p) => p !== path) };
+    } else {
+      return { selectedPaths: [...state.selectedPaths, path] };
+    }
+  }),
+  clearSelection: () => set({ selectedPaths: [] }),
 }))
