@@ -3,8 +3,9 @@ import FileExplorer from './components/FileExplorer';
 import { useStore } from './store';
 import { Play, Settings2, Trash2, CheckCircle2, AlertCircle } from 'lucide-react';
 
-const API_BASE = 'http://localhost:8080';
-const WS_BASE = 'ws://localhost:8080/ws';
+const API_BASE = window.location.origin;
+const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+const WS_BASE = `${protocol}//${window.location.host}/ws`;
 
 interface LogMessage {
   time: string;

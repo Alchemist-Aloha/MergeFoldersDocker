@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"mergefoldersdocker/pkg/api"
 	"mergefoldersdocker/pkg/ws"
@@ -38,16 +39,27 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	
-	r.StaticFS("/ui", http.FS(subFS))
-	
-	// Redirect root to /ui
-	r.GET("/", func(c *gin.Context) {
-		c.Redirect(http.StatusMovedPermanently, "/ui/")
-	})
 
-	// Handle React SPA routes
+	// SPA Middleware / Static serving
 	r.NoRoute(func(c *gin.Context) {
+		path := c.Request.URL.Path
+		
+		// If it's an API or WS request that reached here, it's a 404
+		if strings.HasPrefix(path, "/api") || path == "/ws" {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Not Found"})
+			return
+		}
+
+		// Try to serve static file from embedded FS
+		// Open the file to see if it exists (strip leading /)
+		f, err := subFS.Open(strings.TrimPrefix(path, "/"))
+		if err == nil {
+			f.Close()
+			c.FileFromFS(path, http.FS(subFS))
+			return
+		}
+
+		// Fallback to index.html for React SPA
 		c.FileFromFS("/", http.FS(subFS))
 	})
 

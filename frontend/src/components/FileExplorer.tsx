@@ -9,7 +9,7 @@ interface FileEntry {
   size: number;
 }
 
-const API_BASE = 'http://localhost:8080';
+const API_BASE = window.location.origin;
 
 export default function FileExplorer() {
   const { currentPath, setCurrentPath, setSourcePath, setDestPath } = useStore();
