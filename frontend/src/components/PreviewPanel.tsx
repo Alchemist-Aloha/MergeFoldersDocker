@@ -12,7 +12,7 @@ interface FileEntry {
 const API_BASE = window.location.origin;
 
 export default function PreviewPanel() {
-  const { previewPath, selectedPaths, toggleSelection, triggerRefresh } = useStore();
+  const { previewPath, selectedPaths, toggleSelection, triggerRefresh, refreshKey } = useStore();
   const [images, setImages] = useState<FileEntry[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -47,7 +47,7 @@ export default function PreviewPanel() {
 
   useEffect(() => {
     fetchImages();
-  }, [previewPath]);
+  }, [previewPath, refreshKey]);
 
   const selectedInPreview = images.filter(img => selectedPaths.includes(img.path));
   const allSelected = images.length > 0 && selectedInPreview.length === images.length;
