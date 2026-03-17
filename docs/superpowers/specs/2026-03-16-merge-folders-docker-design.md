@@ -22,10 +22,12 @@ To achieve trivial deployment and a minimal resource footprint, the application 
   - `GET /api/fs/list?path=...`: Returns directory contents.
   - `GET /api/fs/thumb?path=...`: Streams generated thumbnails.
   - `POST /api/merge`: Initiates the merge operation.
+    - **Request Payload**: `{ "source": "string", "destination": "string", "policy": "rename|overwrite|skip", "dryRun": boolean }`
 - **`pkg/fs`**: Core logic for:
   - **Chroot Jail**: All file operations are strictly restricted to the mounted `/app/data` directory.
-  - **Thumbnail Generation**: Uses `disintegration/imaging` to create and cache thumbnails on the server.
+  - **Thumbnail Generation**: Uses `disintegration/imaging` to create and cache thumbnails in `/app/cache`.
 - **`pkg/ws`**: WebSocket hub for broadcasting progress updates from the Merge Engine.
+  - **Message Format**: `{ "type": "progress|log|error|complete", "data": { "percent": number, "message": "string", "file": "string" } }`
 
 ### 2.2 Frontend (React UI)
 - **File Explorer**: A visual browser for navigating the `/app/data` volume.
@@ -44,19 +46,21 @@ To achieve trivial deployment and a minimal resource footprint, the application 
 5. Engine processes each file:
    - Checks if file exists in `D`.
    - If collision exists, applies the selected policy (e.g., `image.jpg` -> `image_1.jpg`).
-   - Performs a local `os.Rename` (fast move) or `io.Copy` (if across filesystems) inside the container.
+   - If `dryRun` is false, performs a local `os.Rename` (fast move) or `io.Copy` (if across filesystems) inside the container.
    - Broadcasts progress updates via WebSocket.
 
 ### 3.2 Thumbnail Pipeline
 1. Frontend requests a thumbnail for `/app/data/images/photo.jpg`.
 2. Backend checks the internal cache (`/app/cache`).
 3. If missing, backend generates a 150px thumbnail, saves it to cache, and streams it back.
+4. **Cache Persistence**: The `/app/cache` directory is ephemeral by default but can be mapped to a host volume for persistence.
 
 ## 4. Security and Constraints
 
 - **Single Mount Volume**: The container expects exactly one volume mounted at `/app/data` (e.g., `-v /mnt/storage:/app/data`).
 - **Path Validation**: All API paths are cleaned and validated to ensure they start with `/app/data`. Any path containing `..` or leading outside the root is rejected with a 403 Forbidden.
-- **Read-Only Safeties**: Optional "Dry Run" mode to preview merge operations without modifying files.
+- **Authentication**: This application is intended to run in a trusted local environment or behind a reverse proxy (e.g., Nginx, Authelia) providing authentication. Direct exposure to the public internet is not recommended.
+- **Dry Run Safety**: A "Dry Run" mode is a mandatory feature for the Merge Engine to allow users to verify the outcome without actual file movement.
 
 ## 5. Implementation Phases
 
