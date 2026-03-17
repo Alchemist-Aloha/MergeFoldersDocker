@@ -23,6 +23,7 @@ func main() {
 
 	r.GET("/api/fs/list", api.ListHandler(chroot))
 	r.GET("/api/fs/thumb", api.ThumbHandler(chroot, cacheDir))
+	r.POST("/api/merge", api.MergeHandler(chroot, hub))
 	r.GET("/ws", ws.ServeWs(hub))
 
 	log.Println("Server starting on :8080")

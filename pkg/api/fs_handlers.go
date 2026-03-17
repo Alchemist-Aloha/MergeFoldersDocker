@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"mergefoldersdocker/pkg/fs"
+	"mergefoldersdocker/pkg/ws"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -47,5 +48,35 @@ func ThumbHandler(chroot, cacheDir string) gin.HandlerFunc {
 		}
 
 		c.File(thumbPath)
+	}
+}
+
+type MergeRequest struct {
+	Source      string `json:"source" binding:"required"`
+	Destination string `json:"destination" binding:"required"`
+	Policy      string `json:"policy" binding:"required"`
+	DryRun      bool   `json:"dryRun"`
+}
+
+func MergeHandler(chroot string, hub *ws.Hub) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req MergeRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		validSrc, cleanSrc := fs.ValidatePath(req.Source, chroot)
+		validDst, cleanDst := fs.ValidatePath(req.Destination, chroot)
+
+		if !validSrc || !validDst {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Access denied"})
+			return
+		}
+
+		// Start background merge process
+		go fs.RunMerge(cleanSrc, cleanDst, req.Policy, req.DryRun, hub)
+
+		c.JSON(http.StatusAccepted, gin.H{"status": "Merge started"})
 	}
 }
