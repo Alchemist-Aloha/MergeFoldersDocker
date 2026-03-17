@@ -15,7 +15,7 @@ export default function FileExplorer() {
   const { 
     currentPath, setCurrentPath, 
     selectedPaths, toggleSelection, clearSelection,
-    setPreviewPath, previewPath, refreshKey
+    setPreviewPath, previewPath, refreshKey, setActiveView
   } = useStore();
   const [files, setFiles] = useState<FileEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -44,6 +44,10 @@ export default function FileExplorer() {
   const handleRowClick = (file: FileEntry) => {
     if (file.isDir) {
       setPreviewPath(file.path);
+      // On mobile, switch to preview view automatically when a folder is clicked
+      if (window.innerWidth < 768) {
+        setActiveView('preview');
+      }
     }
   };
 
@@ -55,38 +59,38 @@ export default function FileExplorer() {
 
   return (
     <div className="flex flex-col h-full bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-      <div className="p-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+      <div className="p-3 md:p-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
         <div className="flex items-center gap-2 overflow-hidden">
           <button 
             onClick={goUp} 
             disabled={currentPath === '/app/data'}
-            className="p-1 hover:bg-gray-200 rounded disabled:opacity-30 disabled:cursor-not-allowed"
+            className="p-1.5 hover:bg-gray-200 rounded disabled:opacity-30 disabled:cursor-not-allowed"
           >
-            <ChevronLeft size={20} />
+            <ChevronLeft size={18} />
           </button>
-          <span className="font-medium text-gray-700 truncate">{currentPath}</span>
+          <span className="text-xs md:text-sm font-medium text-gray-700 truncate">{currentPath}</span>
         </div>
       </div>
 
       {selectedPaths.length > 0 && (
-        <div className="bg-blue-50 px-4 py-2 border-b border-blue-100 flex items-center justify-between">
-          <span className="text-sm font-bold text-blue-700">{selectedPaths.length} selected</span>
+        <div className="bg-blue-50 px-3 md:px-4 py-1.5 md:py-2 border-b border-blue-100 flex items-center justify-between">
+          <span className="text-[11px] md:text-sm font-bold text-blue-700">{selectedPaths.length} selected</span>
           <button 
             onClick={clearSelection}
-            className="text-xs text-blue-600 hover:underline"
+            className="text-[10px] md:text-xs text-blue-600 hover:underline font-bold uppercase"
           >
             Clear
           </button>
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto p-2">
+      <div className="flex-1 overflow-y-auto p-1.5 md:p-2">
         {loading ? (
-          <div className="flex justify-center p-8 text-gray-400">Loading...</div>
+          <div className="flex justify-center p-8 text-gray-400 text-sm">Loading...</div>
         ) : files.length === 0 ? (
-          <div className="flex justify-center p-8 text-gray-400 italic">Empty directory</div>
+          <div className="flex justify-center p-8 text-gray-400 italic text-sm">Empty directory</div>
         ) : (
-          <div className="grid grid-cols-1 gap-1">
+          <div className="grid grid-cols-1 gap-0.5 md:gap-1">
             {files.map(file => {
               const isSelected = selectedPaths.includes(file.path);
               const isPreviewed = previewPath === file.path;
@@ -94,14 +98,14 @@ export default function FileExplorer() {
               return (
                 <div 
                   key={file.path}
-                  className={`flex items-center gap-3 p-2 rounded cursor-pointer group transition-colors ${
+                  className={`flex items-center gap-2 md:gap-3 p-2 md:p-2.5 rounded-md cursor-pointer group transition-colors ${
                     isPreviewed ? 'bg-blue-100' : 'hover:bg-gray-50'
                   }`}
                   onClick={() => handleRowClick(file)}
                   onDoubleClick={() => handleDoubleClick(file)}
                 >
                   <div 
-                    className="p-1 hover:bg-gray-200 rounded"
+                    className="p-1.5 hover:bg-gray-200 rounded-md shrink-0"
                     onClick={(e) => {
                       e.stopPropagation();
                       toggleSelection(file.path);
@@ -116,7 +120,7 @@ export default function FileExplorer() {
                   </div>
                   
                   <div className="flex-1 overflow-hidden">
-                    <div className={`truncate ${file.isDir ? 'font-medium text-gray-800' : 'text-gray-600'}`}>
+                    <div className={`truncate text-xs md:text-sm ${file.isDir ? 'font-bold text-gray-800' : 'text-gray-600'}`}>
                       {file.name}
                     </div>
                   </div>
