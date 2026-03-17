@@ -51,3 +51,16 @@ func ListDirectory(dirPath, chroot string) ([]FileEntry, error) {
 	}
 	return result, nil
 }
+
+func RemovePaths(paths []string, chroot string) error {
+	for _, p := range paths {
+		valid, cleanPath := ValidatePath(p, chroot)
+		if !valid {
+			return fmt.Errorf("access denied: %s", p)
+		}
+		if err := os.RemoveAll(cleanPath); err != nil {
+			return err
+		}
+	}
+	return nil
+}

@@ -22,8 +22,14 @@ func main() {
 	r := gin.Default()
 	r.Use(cors.Default())
 
-	chroot := "/app/data"
-	cacheDir := "/app/cache"
+	chroot := os.Getenv("DATA_PATH")
+	if chroot == "" {
+		chroot = "/app/data"
+	}
+	cacheDir := os.Getenv("CACHE_PATH")
+	if cacheDir == "" {
+		cacheDir = "/app/cache"
+	}
 	os.MkdirAll(cacheDir, 0755)
 
 	hub := ws.NewHub()
@@ -32,6 +38,7 @@ func main() {
 	r.GET("/api/fs/list", api.ListHandler(chroot))
 	r.GET("/api/fs/thumb", api.ThumbHandler(chroot, cacheDir))
 	r.POST("/api/merge", api.MergeHandler(chroot, hub))
+	r.DELETE("/api/fs/remove", api.RemoveHandler(chroot))
 	r.GET("/ws", ws.ServeWs(hub))
 
 	// Serve embedded frontend

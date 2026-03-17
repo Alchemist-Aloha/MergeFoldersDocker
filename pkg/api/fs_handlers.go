@@ -52,10 +52,10 @@ func ThumbHandler(chroot, cacheDir string) gin.HandlerFunc {
 }
 
 type MergeRequest struct {
-	Source      string `json:"source" binding:"required"`
-	Destination string `json:"destination" binding:"required"`
-	Policy      string `json:"policy" binding:"required"`
-	DryRun      bool   `json:"dryRun"`
+	Sources     []string `json:"sources" binding:"required"`
+	Destination string   `json:"destination" binding:"required"`
+	Policy      string   `json:"policy" binding:"required"`
+	DryRun      bool     `json:"dryRun"`
 }
 
 func MergeHandler(chroot string, hub *ws.Hub) gin.HandlerFunc {
@@ -66,17 +66,46 @@ func MergeHandler(chroot string, hub *ws.Hub) gin.HandlerFunc {
 			return
 		}
 
-		validSrc, cleanSrc := fs.ValidatePath(req.Source, chroot)
 		validDst, cleanDst := fs.ValidatePath(req.Destination, chroot)
-
-		if !validSrc || !validDst {
-			c.JSON(http.StatusForbidden, gin.H{"error": "Access denied"})
+		if !validDst {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Access denied to destination"})
 			return
 		}
 
-		// Start background merge process
-		go fs.RunMerge(cleanSrc, cleanDst, req.Policy, req.DryRun, hub)
+		var cleanSources []string
+		for _, src := range req.Sources {
+			validSrc, cleanSrc := fs.ValidatePath(src, chroot)
+			if !validSrc {
+				c.JSON(http.StatusForbidden, gin.H{"error": fmt.Sprintf("Access denied to source: %s", src)})
+				return
+			}
+			cleanSources = append(cleanSources, cleanSrc)
+		}
+
+		// Start background batch merge process
+		go fs.RunBatchMerge(cleanSources, cleanDst, req.Policy, req.DryRun, hub)
 
 		c.JSON(http.StatusAccepted, gin.H{"status": "Merge started"})
+	}
+}
+
+type RemoveRequest struct {
+	Paths []string `json:"paths" binding:"required"`
+}
+
+func RemoveHandler(chroot string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req RemoveRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		if err := fs.RemovePaths(req.Paths, chroot); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"status": "Removed successfully"})
 	}
 }
