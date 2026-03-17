@@ -15,7 +15,7 @@ interface LogMessage {
 }
 
 function App() {
-  const { selectedPaths, clearSelection } = useStore();
+  const { selectedPaths, clearSelection, triggerRefresh } = useStore();
   const [policy, setPolicy] = useState('rename');
   const [dryRun, setDryRun] = useState(true);
   const [progress, setProgress] = useState(0);
@@ -36,6 +36,8 @@ function App() {
         if (msg.data.percent === 100) {
           setMerging(false);
           addLog('Operation complete', 'success');
+          triggerRefresh();
+          clearSelection();
         }
       } else if (msg.type === 'log') {
         addLog(msg.data.message);
@@ -45,7 +47,7 @@ function App() {
       }
     };
     return () => ws.close();
-  }, []);
+  }, [triggerRefresh, clearSelection]);
 
   const addLog = (message: string, type: 'log' | 'error' | 'success' = 'log') => {
     setLogs(prev => [{
@@ -95,6 +97,7 @@ function App() {
         addLog(data.error, 'error');
       } else {
         addLog(`Successfully removed ${selectedPaths.length} items`, 'success');
+        triggerRefresh();
         clearSelection();
       }
       setMerging(false);

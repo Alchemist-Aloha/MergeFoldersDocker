@@ -15,7 +15,7 @@ export default function FileExplorer() {
   const { 
     currentPath, setCurrentPath, 
     selectedPaths, toggleSelection, clearSelection,
-    setPreviewPath, previewPath
+    setPreviewPath, previewPath, refreshKey
   } = useStore();
   const [files, setFiles] = useState<FileEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -32,7 +32,7 @@ export default function FileExplorer() {
         console.error(err);
         setLoading(false);
       });
-  }, [currentPath]);
+  }, [currentPath, refreshKey]);
 
   const goUp = () => {
     const parts = currentPath.split('/');
